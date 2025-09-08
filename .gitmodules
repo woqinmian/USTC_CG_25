@@ -11,3 +11,6 @@
 	path = Framework3D/Framework3D
 	url = https://github.com/USTC-CG-NEXT/Framework3D.git
 	branch = homework
+[submodule "Framework2D/third_party/glm"]
+	path = Framework2D/third_party/glm
+	url = git@github.com:g-truc/glm.git

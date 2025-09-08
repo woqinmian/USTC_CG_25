@@ -1,6 +1,7 @@
 #include "target_image_widget.h"
 
 #include <cmath>
+#include <iostream>
 
 namespace USTC_CG
 {
@@ -123,7 +124,18 @@ void TargetImageWidget::clone()
             // each pixel in the selected region, calculate the final RGB color
             // by solving Poisson Equations.
             restore();
-
+            SeamlessClone seamlessclone(source_image_->get_data(), data_, mask);
+            std::shared_ptr<Image> res_img = seamlessclone.solve(static_cast<int>(mouse_position_.x - source_image_->get_position().x),
+                                                                 static_cast<int>(mouse_position_.y - source_image_->get_position().y));
+            for(int i = 0; i < mask->width(); i++){
+                for(int j = 0; j < mask->height(); j++){
+                    if(mask->get_pixel(i, j)[0] > 0){
+                        data_->set_pixel(static_cast<int>(mouse_position_.x - source_image_->get_position().x + i),
+                                         static_cast<int>(mouse_position_.y - source_image_->get_position().y + j),
+                                         res_img->get_pixel(i, j));
+                    }
+                }
+            }
             break;
         }
         default: break;

@@ -2,6 +2,8 @@
 
 #include "source_image_widget.h"
 #include "common/image_widget.h"
+#include "seamlessclone.h"
+
 
 namespace USTC_CG
 {

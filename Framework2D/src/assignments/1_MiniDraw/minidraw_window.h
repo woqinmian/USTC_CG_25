@@ -21,5 +21,8 @@ class MiniDraw : public Window
     std::shared_ptr<Canvas> p_canvas_ = nullptr;
 
     bool flag_show_canvas_view_ = true;
+
+    float color[4] = {1, 0, 0, 1};
+    float thickness = 2.0f;
 };
 }  // namespace USTC_CG

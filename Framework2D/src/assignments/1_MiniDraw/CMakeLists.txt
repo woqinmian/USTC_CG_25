@@ -4,6 +4,8 @@ file(GLOB source
   "${CMAKE_CURRENT_SOURCE_DIR}/*.h" 
   "${CMAKE_CURRENT_SOURCE_DIR}/shapes/*.cpp"
   "${CMAKE_CURRENT_SOURCE_DIR}/shapes/*.h" 
+  "${CMAKE_CURRENT_SOURCE_DIR}/controlpoint/*.cpp"
+  "${CMAKE_CURRENT_SOURCE_DIR}/controlpoint/*.h" 
 )
 add_executable(${PROJECT_NAME} ${source})
 target_include_directories(${PROJECT_NAME} PUBLIC ${CMAKE_CURRENT_SOURCE_DIR})

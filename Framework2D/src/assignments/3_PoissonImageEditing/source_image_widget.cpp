@@ -31,6 +31,14 @@ void SourceImageWidget::enable_selecting(bool flag)
     flag_enable_selecting_region_ = flag;
 }
 
+void SourceImageWidget::set_shapetype(int val){
+    region_type_ = static_cast<RegionType>(val);
+}
+
+void SourceImageWidget::set_fill(bool flag){
+    enable_fill_ = flag;
+}
+
 void SourceImageWidget::select_region()
 {
     /// Invisible button over the canvas to capture mouse interactions.
@@ -49,6 +57,9 @@ void SourceImageWidget::select_region()
     {
         mouse_click_event();
     }
+    if(is_hovered_ && ImGui::IsMouseClicked(ImGuiMouseButton_Right)){
+        mouse_right_click_event();
+    }
     mouse_move_event();
     if (!ImGui::IsMouseDown(ImGuiMouseButton_Left))
         mouse_release_event();
@@ -59,7 +70,7 @@ void SourceImageWidget::select_region()
         Shape::Config s = { .bias = { position_.x, position_.y },
                             .line_color = { 255, 0, 0, 255 },
                             .line_thickness = 2.0f };
-        ImDrawList* draw_list = ImGui::GetWindowDrawList();
+        // ImDrawList* draw_list = ImGui::GetWindowDrawList();
         selected_shape_->draw(s);
     }  
 }
@@ -98,8 +109,31 @@ void SourceImageWidget::mouse_click_event()
                     std::make_unique<Rect>(start_.x, start_.y, end_.x, end_.y);
                 break;
             }
+            case USTC_CG::SourceImageWidget::kFreehand:{
+                selected_shape_ = std::make_unique<Freehand>(start_.x, start_.y, end_.x, end_.y);
+                break;
+            }
+            case USTC_CG::SourceImageWidget::kPolygon:{
+                selected_shape_ = std::make_unique<Polygon>(start_.x, start_.y, end_.x, end_.y);
+                break;
+            }
             default: break;
         }
+    }
+    else{
+        if(region_type_ == kPolygon){
+            end_ = mouse_pos_in_canvas();
+            selected_shape_->add_control_point(end_.x, end_.y);
+        }
+    }
+}
+
+void SourceImageWidget::mouse_right_click_event(){
+    if(draw_status_ && region_type_ == kPolygon){
+        auto polygon = dynamic_cast<Polygon *>(selected_shape_.get());
+        polygon->set_sealed();
+        draw_status_ = false;
+        update_selected_region();
     }
 }
 
@@ -108,6 +142,16 @@ void SourceImageWidget::mouse_move_event()
     // Keep updating the region
     if (draw_status_)
     {
+        if(region_type_ == USTC_CG::SourceImageWidget::kFreehand){
+            ImVec2 new_pos = mouse_pos_in_canvas();
+            int dx = new_pos.x - end_.x;
+            int dy = new_pos.y - end_.y;
+            if(dx * dx + dy * dy > 25.0f){
+                selected_shape_->add_control_point(new_pos.x, new_pos.y);
+                end_ = new_pos;
+            }
+            return;
+        }
         end_ = mouse_pos_in_canvas();
         if (selected_shape_)
             selected_shape_->update(end_.x, end_.y);
@@ -117,6 +161,9 @@ void SourceImageWidget::mouse_move_event()
 void SourceImageWidget::mouse_release_event()
 {
     // Finish drawing the region
+    if(draw_status_ && draw_status_ == kPolygon){
+        return;
+    }
     if (draw_status_ && selected_shape_)
     {
         draw_status_ = false;

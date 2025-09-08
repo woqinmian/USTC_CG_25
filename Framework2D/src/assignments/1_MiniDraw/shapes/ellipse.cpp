@@ -1,38 +1,20 @@
-#include "rect.h"
+#include "ellipse.h"
 
 #include <imgui.h>
-#include <cmath>
 
-namespace USTC_CG
-{
-// Draw the rectangle using ImGui
-void Rect::draw(const Config& config) const
-{
-    ImDrawList* draw_list = ImGui::GetWindowDrawList();
+namespace USTC_CG{
 
-    draw_list->AddLine(
-        ImVec2(config.bias[0] + point_x[0], config.bias[1] + point_y[0]),
-        ImVec2(config.bias[0] + point_x[1], config.bias[1] + point_y[1]),
+void Ellipse::draw(const Config &config) const {
+    ImDrawList *drwa_list = ImGui::GetWindowDrawList();
+
+    drwa_list->AddEllipse(
+        ImVec2(config.bias[0] + center_x_, config.bias[1] + center_y_),
+        ImVec2(a_, b_),
         IM_COL32(line_color[0], line_color[1], line_color[2], line_color[3]),
-        line_thickness);
-
-    draw_list->AddLine(
-        ImVec2(config.bias[0] + point_x[1], config.bias[1] + point_y[1]),
-        ImVec2(config.bias[0] + point_x[2], config.bias[1] + point_y[2]),
-        IM_COL32(line_color[0], line_color[1], line_color[2], line_color[3]),
-        line_thickness);
-
-    draw_list->AddLine(
-        ImVec2(config.bias[0] + point_x[2], config.bias[1] + point_y[2]),
-        ImVec2(config.bias[0] + point_x[3], config.bias[1] + point_y[3]),
-        IM_COL32(line_color[0], line_color[1], line_color[2], line_color[3]),
-        line_thickness);
-
-    draw_list->AddLine(
-        ImVec2(config.bias[0] + point_x[3], config.bias[1] + point_y[3]),
-        ImVec2(config.bias[0] + point_x[0], config.bias[1] + point_y[0]),
-        IM_COL32(line_color[0], line_color[1], line_color[2], line_color[3]),
-        line_thickness);
+        theta_,
+        ImDrawFlags_None,
+        line_thickness
+    );
 
     if(is_selected){
         Controlpoint::Config s = {.bias = {config.bias[0], config.bias[1]}};
@@ -42,15 +24,32 @@ void Rect::draw(const Config& config) const
     }
 }
 
-void Rect::update(float x, float y)
-{
+void Ellipse::update(float x, float y){
     point_x[1] = x;
     point_x[2] = x;
     point_y[2] = y;
     point_y[3] = y;
+
+    center_x_ = (point_x[0] + point_x[2]) / 2;
+    center_y_ = (point_y[0] + point_y[2]) / 2;
+
+    float ax = (point_x[1] + point_x[2]) / 2.0f;
+    float ay = (point_y[1] + point_y[2]) / 2.0f;
+    float bx = (point_x[1] + point_x[0]) / 2.0f;
+    float by = (point_y[1] + point_y[0]) / 2.0f;
+    a_ = std::sqrt((ax - center_x_) * (ax - center_x_) + (ay - center_y_) * (ay - center_y_));
+    b_ = std::sqrt((bx - center_x_) * (bx - center_x_) + (by - center_y_) * (by - center_y_));
+
+    float dx1 = 10.0f;
+    float dy1 = 0.0f;
+    float dx2 = point_x[1] - point_x[0];
+    float dy2 = point_y[1] - point_y[0];
+    float cross = dx1 * dy2 - dx2 * dy1;
+    float dot = dx1 * dx2 + dy1 * dy2;
+    theta_ = std::atan2(cross, dot);
 }
 
-void Rect::initial_point(){
+void Ellipse::initial_point(){
     current_point_ = std::make_shared<Controlpoint>(0, 0);
     point_list_.push_back(current_point_);
 
@@ -81,19 +80,34 @@ void Rect::initial_point(){
     current_point_.reset();
 }
 
+void Ellipse::update_point(){
+    center_x_ = (point_x[0] + point_x[2]) / 2;
+    center_y_ = (point_y[0] + point_y[2]) / 2;
 
-void Rect::update_point(){
-    float center_point_x = (point_x[0] + point_x[2]) / 2.0f;
-    float center_point_y = (point_y[0] + point_y[2]) / 2.0f;
-    float rotate_point_x = ((point_x[1] + point_x[2]) / 2.0f + center_point_x) / 2.0f;
-    float rotate_point_y = ((point_y[1] + point_y[2]) / 2.0f + center_point_y) / 2.0f;
-    float scale_point_x = (center_point_x + point_x[2]) / 2.0f;
-    float scale_point_y = (center_point_y + point_y[2]) / 2.0f;
+    float ax = (point_x[1] + point_x[2]) / 2.0f;
+    float ay = (point_y[1] + point_y[2]) / 2.0f;
+    float bx = (point_x[1] + point_x[0]) / 2.0f;
+    float by = (point_y[1] + point_y[0]) / 2.0f;
+    a_ = std::sqrt((ax - center_x_) * (ax - center_x_) + (ay - center_y_) * (ay - center_y_));
+    b_ = std::sqrt((bx - center_x_) * (bx - center_x_) + (by - center_y_) * (by - center_y_));
+
+    float dx1 = 10.0f;
+    float dy1 = 0.0f;
+    float dx2 = point_x[1] - point_x[0];
+    float dy2 = point_y[1] - point_y[0];
+    float cross = dx1 * dy2 - dx2 * dy1;
+    float dot = dx1 * dx2 + dy1 * dy2;
+    theta_ = std::atan2(cross, dot);
+
+    float rotate_point_x = ((point_x[1] + point_x[2]) / 2.0f + center_x_) / 2.0f;
+    float rotate_point_y = ((point_y[1] + point_y[2]) / 2.0f + center_y_) / 2.0f;
+    float scale_point_x = (center_x_ + point_x[2]) / 2.0f;
+    float scale_point_y = (center_y_ + point_y[2]) / 2.0f;
 
     std::shared_ptr<Controlpoint> updating;
 
     updating = point_list_[0];
-    updating->update(center_point_x, center_point_y);
+    updating->update(center_x_, center_y_);
 
     updating = point_list_[1];
     updating->update(rotate_point_x, rotate_point_y);
@@ -120,7 +134,7 @@ void Rect::update_point(){
     updating->update((point_x[3] + point_x[0]) / 2.0f, (point_y[3] + point_y[0]) / 2.0f);
 }
 
-void Rect::update_shape_by_center(float x, float y){
+void Ellipse::update_shape_by_center(float x, float y){
     float offset_x = x - (point_x[0] + point_x[2]) / 2.0f;
     float offset_y = y - (point_y[0] + point_y[2]) / 2.0f;
     for(int i = 0; i < 4; i++){
@@ -129,7 +143,7 @@ void Rect::update_shape_by_center(float x, float y){
     }
 }
 
-void Rect::update_shape_by_rotate(float x, float y){
+void Ellipse::update_shape_by_rotate(float x, float y){
     float center_point_x = (point_x[0] + point_x[2]) / 2.0f;
     float center_point_y = (point_y[0] + point_y[2]) / 2.0f;
     float rotate_point_x = ((point_x[1] + point_x[2]) / 2.0f + center_point_x) / 2.0f;
@@ -148,7 +162,7 @@ void Rect::update_shape_by_rotate(float x, float y){
     }
 }
 
-void Rect::update_shape_by_scale(float x, float y){
+void Ellipse::update_shape_by_scale(float x, float y){
     float center_point_x = (point_x[0] + point_x[2]) / 2.0f;
     float center_point_y = (point_y[0] + point_y[2]) / 2.0f;
     float scale_point_x = (center_point_x + point_x[2]) / 2.0f;
@@ -170,7 +184,7 @@ void Rect::update_shape_by_scale(float x, float y){
     }
 }
 
-void Rect::update_shape_by_vertax(float x, float y){
+void Ellipse::update_shape_by_vertax(float x, float y){
     int order = current_point_->order_;
     float x1 = point_x[order];
     float y1 = point_y[order];
@@ -202,7 +216,7 @@ void Rect::update_shape_by_vertax(float x, float y){
     point_y[(order + 1) % 4] += y - tempy;
 }
 
-void Rect::update_shape_by_edge(float x, float y){
+void Ellipse::update_shape_by_edge(float x, float y){
     float center_point_x = (point_x[0] + point_x[2]) / 2.0f;
     float center_point_y = (point_y[0] + point_y[2]) / 2.0f;
 
@@ -230,15 +244,24 @@ void Rect::update_shape_by_edge(float x, float y){
     scale_by_times(point_x[(order + 1) % 4], point_y[(order + 1) % 4], cx2, cy2, times);
 }
 
-float Rect::min_distance(float x, float y){
-    float min[4];
-    for(int i = 0; i < 4; i++){
-        min[i] = line2vertax_min_distance(point_x[i], point_y[i], point_x[(i + 1) % 4], point_y[(i + 1) % 4], x, y);
+float Ellipse::min_distance(float x, float y){
+    float temp_x = x - center_x_;
+    float temp_y = y - center_y_;
+
+    rotate_by_theta(temp_x, temp_y, 0, 0, -theta_);
+
+    float a1 = std::max(a_ - 10.0f, 1.0f);
+    float a2 = a_ + 10.0f;
+    float b1 = std::max(b_ - 10.0f, 1.0f);
+    float b2 = b_ + 10.0f;
+
+    if(temp_x * temp_x / (a1 * a1) + temp_y * temp_y / (b1 * b1) > 1.0f){
+        if(temp_x * temp_x / (a2 * a2) + temp_y * temp_y / (b2 * b2) < 1.0f){
+            return 0.0f;
+        }
     }
 
-    min[0] = std::min(min[0], min[1]);
-    min[2] = std::min(min[2], min[3]);
-    return std::min(min[0], min[2]);
+    return 100.0f;
 }
 
-}  // namespace USTC_CG
+}

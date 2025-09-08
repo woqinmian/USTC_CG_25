@@ -1,4 +1,6 @@
 #include "warping_widget.h"
+#include "warper/IDW_warper.h"
+#include "warper/RBF_warper.h"
 
 #include <cmath>
 #include <iostream>
@@ -158,6 +160,16 @@ void WarpingWidget::warping()
         {
             // HW2_TODO: Implement the IDW warping
             // use selected points start_points_, end_points_ to construct the map
+            IDWWarper idwwarper(start_points_, end_points_);
+            for(int y = 0; y < data_->height(); y++){
+                for(int x = 0; x < data_->width(); x++){
+                    auto [new_x, new_y] = idwwarper.warp(x, y);
+                    if(new_x >= 0 && new_x < data_->width() && new_y >= 0 && new_y < data_->height()){
+                        std::vector<unsigned char> pixel = data_->get_pixel(x, y);
+                        warped_image.set_pixel(new_x, new_y, pixel);
+                    }
+                }
+            }
             std::cout << "IDW not implemented." << std::endl;
             break;
         }
@@ -165,6 +177,16 @@ void WarpingWidget::warping()
         {
             // HW2_TODO: Implement the RBF warping
             // use selected points start_points_, end_points_ to construct the map
+            RBFWarper rbfwarper(start_points_, end_points_);
+            for(int y = 0; y < data_->height(); y++){
+                for(int x = 0; x < data_->width(); x++){
+                    auto [new_x, new_y] = rbfwarper.warp(x, y);
+                    if(new_x >= 0 && new_x < data_->width() && new_y >= 0 && new_y < data_->height()){
+                        std::vector<unsigned char> pixel = data_->get_pixel(x, y);
+                        warped_image.set_pixel(new_x, new_y, pixel);
+                    }
+                }
+            }
             std::cout << "RBF not implemented." << std::endl;
             break;
         }

@@ -29,6 +29,17 @@ class Canvas : public Widget
         kRect = 2,
         kEllipse = 3,
         kPolygon = 4,
+        kFreehand = 5,
+        kSelect = 6,
+    };
+
+    enum StatueType{
+        None = 0,
+        Draw_T = 1,
+        Draw_F = 2,
+        Select_Shape_T = 3,
+        Select_Point_T = 4,
+        Select_F = 5,
     };
 
     // Shape type setters.
@@ -36,12 +47,16 @@ class Canvas : public Widget
     void set_line();
     void set_rect();
     // HW1_TODO: more shape types.
+    void set_ellipse();
+    void set_polygon();
+    void set_freehand();
+    void set_select();
 
     // Clears all shapes from the canvas.
     void clear_shape_list();
 
     // Set canvas attributes (position and size).
-    void set_attributes(const ImVec2& min, const ImVec2& size);
+    void set_attributes(const ImVec2& min, const ImVec2& size, float color[], float thickness);
 
     // Controls the visibility of the canvas background.
     void show_background(bool flag);
@@ -53,8 +68,10 @@ class Canvas : public Widget
 
     // Event handlers for mouse interactions.
     void mouse_click_event();
+    void mouse_right_click_event();
     void mouse_move_event();
     void mouse_release_event();
+    bool IsMouseMoved();
 
     // Calculates mouse's relative position in the canvas.
     ImVec2 mouse_pos_in_canvas() const;
@@ -64,11 +81,13 @@ class Canvas : public Widget
     ImVec2 canvas_max_;         // Bottom-right corner of the canvas.
     ImVec2 canvas_size_;        // Size of the canvas.
     bool draw_status_ = false;  // Is the canvas currently being drawn on.
+    StatueType status_ = None;
 
     ImVec2 canvas_minimal_size_ = ImVec2(50.f, 50.f);
     ImU32 background_color_ = IM_COL32(50, 50, 50, 255);
     ImU32 border_color_ = IM_COL32(255, 255, 255, 255);
     bool show_background_ = true;  // Controls background visibility.
+    float scale = 1.0f;
 
     // Mouse interaction status.
     bool is_hovered_, is_active_;
@@ -80,6 +99,8 @@ class Canvas : public Widget
 
     // List of shapes drawn on the canvas.
     std::vector<std::shared_ptr<Shape>> shape_list_;
+    float line_color[4];
+    float line_thickness;
 };
 
 }  // namespace USTC_CG

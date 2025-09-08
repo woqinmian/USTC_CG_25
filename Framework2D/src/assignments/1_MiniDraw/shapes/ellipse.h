@@ -2,20 +2,20 @@
 
 #include "shape.h"
 
-namespace USTC_CG
-{
-class Rect : public Shape
-{
-   public:
-    Rect() = default;
+namespace USTC_CG{
 
-    // Initialize a rectangle with start and end points
-    Rect(
-        float start_point_x,
-        float start_point_y,
-        float end_point_x,
-        float end_point_y, float color[], float thickness)
-     : Shape(color, thickness){
+class Ellipse : public Shape{
+  public:
+    Ellipse() = default;
+    Ellipse(float start_point_x, 
+            float start_point_y, 
+            float end_point_x, 
+            float end_point_y, float color[], float thickness)
+            : Shape(color, thickness),
+              start_point_x(start_point_x), 
+              start_point_y(start_point_y), 
+              end_point_x(end_point_x),
+              end_point_y(end_point_y){
       point_x[0] = start_point_x;
       point_y[0] = start_point_y;
       point_x[1] = end_point_x;
@@ -27,14 +27,10 @@ class Rect : public Shape
       initial_point();
     }
 
-    virtual ~Rect() = default;
+    virtual ~Ellipse() = default;
 
-    // Draws the rectangle on the screen
-    // Overrides draw function to implement rectangle-specific drawing logic
-    void draw(const Config& config) const override;
+    void draw(const Config &config) const override;
 
-    // Overrides Shape's update function to adjust the rectangle size during
-    // interaction
     void update(float x, float y) override;
     float min_distance(float x, float y) override;
     void initial_point() override;
@@ -44,11 +40,14 @@ class Rect : public Shape
     void update_shape_by_scale(float x, float y) override;
     void update_shape_by_vertax(float x, float y) override;
     void update_shape_by_edge(float x, float y) override;
-    
 
-   private:
-    // Coordinates of the top-left and bottom-right corners of the rectangle
+  private:
+    float start_point_x, start_point_y;
+    float end_point_x, end_point_y;
     float point_x[4];
     float point_y[4];
+    float center_x_, center_y_;
+    float a_, b_;
+    float theta_;
 };
-}  // namespace USTC_CG
+}

@@ -6,6 +6,9 @@
 #include "imgui.h"
 #include "shapes/line.h"
 #include "shapes/rect.h"
+#include "shapes/ellipse.h"
+#include "shapes/polygon.h"
+#include "shapes/freehand.h"
 
 namespace USTC_CG
 {
@@ -15,20 +18,40 @@ void Canvas::draw()
     // HW1_TODO: more interaction events
     if (is_hovered_ && ImGui::IsMouseClicked(ImGuiMouseButton_Left))
         mouse_click_event();
-    mouse_move_event();
-    if (!ImGui::IsMouseDown(ImGuiMouseButton_Left))
+    if(is_hovered_ && ImGui::IsMouseClicked(ImGuiMouseButton_Right))
+        mouse_right_click_event();
+    if(is_hovered_ && IsMouseMoved())
+        mouse_move_event();
+    // if (!ImGui::IsMouseDown(ImGuiMouseButton_Left))
+    //     mouse_release_event();
+    if(is_hovered_ && ImGui::IsMouseReleased(ImGuiMouseButton_Left))
         mouse_release_event();
+    if(ImGui::IsKeyPressed(ImGuiKey_Enter)){
+        if(status_ == Select_Shape_T){
+            current_shape_->cancel_selected();
+            current_shape_.reset();
+            status_ = Select_F;
+        }
+    }
+    if(status_ == Select_Shape_T){
+        current_shape_->set_linecolor(line_color);
+        current_shape_->set_linethickness(line_thickness);
+    }
 
     draw_shapes();
 }
 
-void Canvas::set_attributes(const ImVec2& min, const ImVec2& size)
+void Canvas::set_attributes(const ImVec2& min, const ImVec2& size, float color[], float thickness)
 {
     canvas_min_ = min;
     canvas_size_ = size;
     canvas_minimal_size_ = size;
     canvas_max_ =
         ImVec2(canvas_min_.x + canvas_size_.x, canvas_min_.y + canvas_size_.y);
+    for(int i = 0; i < 4; i++){
+        line_color[i] = color[i];
+    }
+    line_thickness = thickness;
 }
 
 void Canvas::show_background(bool flag)
@@ -36,22 +59,49 @@ void Canvas::show_background(bool flag)
     show_background_ = flag;
 }
 
-void Canvas::set_default()
-{
-    draw_status_ = false;
+void Canvas::set_default(){
+    status_ = None;
     shape_type_ = kDefault;
 }
 
-void Canvas::set_line()
-{
-    draw_status_ = false;
+void Canvas::set_line(){
+    if(status_ == Select_Shape_T)
+        return;
+    status_ = Draw_F;
     shape_type_ = kLine;
 }
 
-void Canvas::set_rect()
-{
-    draw_status_ = false;
+void Canvas::set_rect(){
+    if(status_ == Select_Shape_T)
+        return;
+    status_ = Draw_F;
     shape_type_ = kRect;
+}
+
+void Canvas::set_ellipse(){
+    if(status_ == Select_Shape_T)
+        return;
+    status_ = Draw_F;
+    shape_type_ = kEllipse;
+}
+
+void Canvas::set_polygon(){
+    if(status_ == Select_Shape_T)
+        return;
+    status_ = Draw_F;
+    shape_type_ = kPolygon;
+}
+
+void Canvas::set_freehand(){
+    if(status_ == Select_Shape_T)
+        return;
+    status_ = Draw_F;
+    shape_type_ = kFreehand;
+}
+
+void Canvas::set_select(){
+    status_ = Select_F;
+    shape_type_ = kDefault;
 }
 
 // HW1_TODO: more shape types, implements
@@ -82,7 +132,7 @@ void Canvas::draw_background()
 
 void Canvas::draw_shapes()
 {
-    Shape::Config s = { .bias = { canvas_min_.x, canvas_min_.y } };
+    Shape::Config s = { .bias = { canvas_min_.x, canvas_min_.y } , .scale = scale};
     ImDrawList* draw_list = ImGui::GetWindowDrawList();
 
     // ClipRect can hide the drawing content outside of the rectangular area
@@ -91,7 +141,7 @@ void Canvas::draw_shapes()
     {
         shape->draw(s);
     }
-    if (draw_status_ && current_shape_)
+    if ((status_ == Draw_T) && current_shape_)
     {
         current_shape_->draw(s);
     }
@@ -101,59 +151,135 @@ void Canvas::draw_shapes()
 void Canvas::mouse_click_event()
 {
     // HW1_TODO: Drawing rule for more primitives
-    if (!draw_status_)
-    {
-        draw_status_ = true;
-        start_point_ = end_point_ = mouse_pos_in_canvas();
-        switch (shape_type_)
-        {
-            case USTC_CG::Canvas::kDefault:
-            {
-                break;
+    std::cout << "mouse click" << std::endl;
+    switch(status_){
+        case USTC_CG::Canvas::StatueType::Draw_F:{
+            status_ = Draw_T;
+            start_point_ = end_point_ = mouse_pos_in_canvas();
+            switch (shape_type_){
+                case USTC_CG::Canvas::kDefault:{
+                    break;
+                }
+                case USTC_CG::Canvas::kLine:{
+                    current_shape_ = std::make_shared<Line>(
+                        start_point_.x, start_point_.y, end_point_.x, end_point_.y, line_color, line_thickness);
+                    break;
+                }
+                case USTC_CG::Canvas::kRect:{
+                    current_shape_ = std::make_shared<Rect>(
+                        start_point_.x, start_point_.y, end_point_.x, end_point_.y, line_color, line_thickness);
+                    break;
+                }
+                case USTC_CG::Canvas::kEllipse:{
+                    current_shape_ = std::make_shared<Ellipse>(
+                        start_point_.x, start_point_.y, end_point_.x, end_point_.y, line_color, line_thickness);
+                    break;
+                }
+                case USTC_CG::Canvas::kPolygon:{
+                    current_shape_ = std::make_shared<Polygon>(
+                        start_point_.x, start_point_.y, end_point_.x, end_point_.y, line_color, line_thickness);
+                    break;
+                }
+                case USTC_CG::Canvas::kFreehand:{
+                    current_shape_ = std::make_shared<Freehand>(
+                        start_point_.x, start_point_.y, end_point_.x, end_point_.y, line_color, line_thickness);
+                    break;
+                }
+                default: break;
             }
-            case USTC_CG::Canvas::kLine:
-            {
-                current_shape_ = std::make_shared<Line>(
-                    start_point_.x, start_point_.y, end_point_.x, end_point_.y);
-                break;
-            }
-            case USTC_CG::Canvas::kRect:
-            {
-                current_shape_ = std::make_shared<Rect>(
-                    start_point_.x, start_point_.y, end_point_.x, end_point_.y);
-                break;
-            }
-            // HW1_TODO: case USTC_CG::Canvas::kEllipse:
-            default: break;
+            break;
         }
+        case USTC_CG::Canvas::StatueType::Draw_T:{
+            switch (shape_type_){
+                case USTC_CG::Canvas::kPolygon:{
+                    end_point_ = mouse_pos_in_canvas();
+                    current_shape_->add_control_point(end_point_.x, end_point_.y);
+                    break;
+                }
+                default:{
+                    status_ = Draw_F;
+                    if (current_shape_){
+                        //current_shape_->initial_point();
+                        shape_list_.push_back(current_shape_);
+                        current_shape_.reset();
+                    }
+                    break;
+                }
+            }
+            break;
+        }
+        case USTC_CG::Canvas::StatueType::Select_F:{
+            for(auto &shape : shape_list_){
+                if(shape->min_distance(end_point_.x,end_point_.y) <= 10.0f){
+                    status_ = Select_Shape_T;
+                    current_shape_ = shape;
+                    current_shape_->set_selected();
+                    std::cout << "selected_shape" << std::endl;
+                    break;
+                }
+            }
+            break;
+        }
+        case USTC_CG::Canvas::StatueType::Select_Shape_T:{
+            if(current_shape_->select_point(end_point_.x, end_point_.y)){
+                status_ = Select_Point_T;
+            }
+            break;
+        }
+        default: break;
     }
-    else
-    {
-        draw_status_ = false;
-        if (current_shape_)
-        {
+}
+
+void Canvas::mouse_right_click_event(){
+    if(status_ == Draw_T && shape_type_ == USTC_CG::Canvas::kPolygon){
+        current_shape_->update(start_point_.x, start_point_.y);
+        std::shared_ptr<Polygon> polygon = std::dynamic_pointer_cast<Polygon>(current_shape_);
+        polygon->set_sealed();
+        status_ = Draw_F;
+        if(current_shape_){
             shape_list_.push_back(current_shape_);
             current_shape_.reset();
         }
     }
 }
 
-void Canvas::mouse_move_event()
-{
+void Canvas::mouse_move_event(){
     // HW1_TODO: Drawing rule for more primitives
-    if (draw_status_)
-    {
-        end_point_ = mouse_pos_in_canvas();
-        if (current_shape_)
-        {
+    if (status_ == Draw_T){
+        if(shape_type_ == kFreehand){
+            current_shape_->add_control_point(end_point_.x, end_point_.y);
+            return;
+        }
+        if (current_shape_){
             current_shape_->update(end_point_.x, end_point_.y);
         }
     }
+    if(status_ == Select_Point_T){
+        current_shape_->update_shape(end_point_.x, end_point_.y);
+    }
 }
 
-void Canvas::mouse_release_event()
-{
-    // HW1_TODO: Drawing rule for more primitives
+void Canvas::mouse_release_event(){
+    if(status_ == Draw_T && shape_type_ == kFreehand){
+        status_ = Draw_F;
+        if(current_shape_){
+            shape_list_.push_back(current_shape_);
+            current_shape_.reset();
+        }
+    }
+    if(status_ == Select_Point_T){
+        status_ = Select_Shape_T;
+        // current_shape_.reset();
+    }
+    std::cout << "mouse_release" << std::endl;
+}
+
+bool Canvas::IsMouseMoved(){
+    ImVec2 new_point = mouse_pos_in_canvas();
+    float dx = new_point.x - end_point_.x;
+    float dy = new_point.y - end_point_.y;
+    end_point_ = new_point;
+    return (dx * dx + dy * dy) > 0.01f;
 }
 
 ImVec2 Canvas::mouse_pos_in_canvas() const

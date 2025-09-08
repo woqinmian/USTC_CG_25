@@ -10,6 +10,10 @@
 // warp(...) function to perform the actual warping.
 #pragma once
 
+#include <glm/glm/glm.hpp>
+#include <glm/glm/gtc/matrix_transform.hpp>
+#include <glm/glm/gtc/type_ptr.hpp>
+
 namespace USTC_CG
 {
 class Warper
@@ -18,6 +22,7 @@ class Warper
     virtual ~Warper() = default;
 
     // HW2_TODO: A virtual function warp(...)
+    virtual std::pair<int, int> warp(int x, int y) = 0;
     
     // HW2_TODO: other functions or variables if you need
 };

@@ -91,10 +91,29 @@ void PoissonWindow::draw_toolbar()
         add_tooltips(
             "Press this button and then click in the target image, to "
             "clone the selected region to the target image.");
+        
+        if(ImGui::MenuItem("Poission") && p_target_ && p_source_){
+            p_target_->set_seamless();
+        }
         // HW3_TODO: You may add more items in the menu for the different types
         // of Poisson editing.
 
         ImGui::EndMainMenuBar();
+
+        if(ImGui::Begin("Settings", nullptr)){
+            ImGui::BulletText("ShapeType");
+            int shape_type = 1;
+            ImGui::RadioButton("Rect", &shape_type, 1);
+            ImGui::RadioButton("Freehand", &shape_type, 2);
+            ImGui::RadioButton("Polygon", &shape_type, 3);
+            if(p_source_){
+                p_source_->set_shapetype(shape_type);
+            }
+
+            bool fill = false;
+            ImGui::Checkbox("Fill", &fill);
+            p_source_->set_fill(fill);
+        }
     }
 }
 
